@@ -1,5 +1,6 @@
 import type { YamlInfrastructuresConfig } from '@/types/Infrastructure'
-import { describe, expect, it } from 'vitest'
+import { load } from 'js-yaml'
+import { describe, expect, it, vi } from 'vitest'
 import { useInfrastructureYamlParser } from '@/composables/Infrastructure/useInfrastructureYamlParser'
 
 function createYamlConfig (
@@ -187,6 +188,38 @@ describe('useInfrastructureYamlParser.ts', () => {
     const auth = parsed.infrastructures[0].auth
     expect(auth?.securityType).toBe('Custom Header')
     expect(auth?.customHeader).toBeUndefined()
+  })
+
+  it.each([
+    ['X-API-KEY:', 'secret'],
+    ['X API KEY', 'secret'],
+    ['', 'secret'],
+    ['X-API-KEY', ' '.repeat(3)],
+    ['X-API-KEY', 'line1\nline2'],
+    ['X-API-KEY', 123_456],
+    [123, 'secret'],
+  ])('omits invalid custom-header YAML values (%j, %j)', (headerName, headerValue) => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    try {
+      const raw = load(`infrastructures:
+  gateway:
+    components:
+      aasRepository:
+        baseUrl: https://aas-repo.example
+    security:
+      type: custom-header
+      config:
+        headerName: ${JSON.stringify(headerName)}
+        headerValue: ${JSON.stringify(headerValue)}
+`)
+      const parser = useInfrastructureYamlParser()
+      expect(parser.validateYamlConfig(raw)).toBe(true)
+      const parsed = parser.parseYamlConfig(raw as YamlInfrastructuresConfig)
+      expect(parsed.infrastructures[0].auth).toEqual({ securityType: 'Custom Header' })
+      expect(warn).toHaveBeenCalledWith(expect.stringContaining('valid headerName and headerValue'))
+    } finally {
+      warn.mockRestore()
+    }
   })
 
   it('parses Catena-X EDC partners from YAML', () => {

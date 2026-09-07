@@ -109,6 +109,7 @@
             label="Custom Header Name"
             :model-value="customHeaderName"
             placeholder="X-API-KEY"
+            :rules="[validateCustomHeaderName]"
             variant="outlined"
             @update:model-value="$emit('update:custom-header-name', $event)"
           />
@@ -118,6 +119,7 @@
             density="compact"
             label="Custom Header Value"
             :model-value="customHeaderValue"
+            :rules="[validateCustomHeaderValue]"
             type="password"
             variant="outlined"
             @update:model-value="$emit('update:custom-header-value', $event)"
@@ -260,6 +262,7 @@
 
 <script lang="ts" setup>
   import type { AuthTokenState, InfrastructureAuth } from '@/types/Infrastructure'
+  import { validateCustomHeaderName, validateCustomHeaderValue } from '@/utils/CustomHeaderUtils'
 
   // Props
   defineProps<{

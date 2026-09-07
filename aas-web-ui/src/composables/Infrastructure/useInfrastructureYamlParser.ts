@@ -11,6 +11,7 @@ import type {
   YamlSecurityConfig,
 } from '@/types/Infrastructure'
 import { createCatenaXPartnerId } from '@/utils/CatenaXPartnerUtils'
+import { isValidCustomHeader } from '@/utils/CustomHeaderUtils'
 import {
   getEndpointFieldsForTemplate,
   normalizeInfrastructureTemplate,
@@ -140,13 +141,11 @@ export function useInfrastructureYamlParser (): {
       }
 
       case 'custom-header': {
-        if (config.headerName && config.headerValue) {
-          auth.customHeader = {
-            name: config.headerName,
-            value: config.headerValue,
-          }
+        const customHeader = { name: config.headerName, value: config.headerValue }
+        if (isValidCustomHeader(customHeader)) {
+          auth.customHeader = { ...customHeader, name: customHeader.name.trim() }
         } else {
-          console.warn('Custom header authentication requires headerName and headerValue')
+          console.warn('Custom header authentication requires a valid headerName and headerValue as non-empty strings')
         }
         break
       }
